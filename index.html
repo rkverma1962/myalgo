@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>	
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoinDCX Trading Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        var socket = io();
+
+        // Update live data
+        socket.on("update_data", function(data) {
+            document.getElementById("price").innerText = data.price;
+            document.getElementById("ema_fast").innerText = data.ema_fast;
+            document.getElementById("ema_slow").innerText = data.ema_slow;
+            document.getElementById("adx").innerText = data.adx;
+            document.getElementById("position").innerText = data.position || "None";
+            document.getElementById("stop_loss").innerText = data.stop_loss || "None";
+            document.getElementById("take_profit").innerText = data.take_profit || "None";
+        });
+
+        // Update logs
+        function updateLog(message) {
+            var logArea = document.getElementById("log_area");
+            var newLog = document.createElement("p");
+            newLog.innerText = message;
+            logArea.appendChild(newLog);
+            logArea.scrollTop = logArea.scrollHeight; // Auto-scroll to latest log
+        }
+
+        // Button State Management
+        function sendRequest(route) {
+            fetch("/" + route)
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.status);
+                    document.getElementById("user_name").innerText=data.data["first_name"] + ' ' + data.data["last_name"];
+                    updateLog(data.status); // Update logs based on action
+
+                    if (route === "connect") {
+                        document.getElementById("connectBtn").disabled = true;
+                        document.getElementById("startBtn").disabled = false;
+                        document.getElementById("stopBtn").disabled = true;
+                    }
+                    if (route === "start") {
+						if (data.error) {
+							alert("Order failed! Bot will not start.");
+							return; // Prevent bot from starting if order fails
+						}
+                        document.getElementById("startBtn").disabled = true;
+                        document.getElementById("stopBtn").disabled = false;
+                    }
+                    if (route === "stop") {
+                        document.getElementById("startBtn").disabled = false;
+                        document.getElementById("stopBtn").disabled = true;
+                    }
+                });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h2>🚀 CoinDCX Trading Bot Dashboard for SOL_USDT Future</h2>
+
+        <div class="buttons">
+            <span class="span-connect">
+                <button id="connectBtn" class="btn connect" onclick="sendRequest('connect')">Connect</button>
+                <span id="user_name"></span>
+            </span>
+            <span><button id="startBtn" class="btn start" onclick="sendRequest('start')" disabled>Start</button></span>
+            <span><button id="stopBtn" class="btn stop" onclick="sendRequest('stop')" disabled>Stop</button></span>
+        </div>
+
+        <!-- Layout using Flexbox -->
+        <div class="content">
+            <!-- Live Data (Left) -->
+            <div class="data-section">
+                <h2>📊 Live Data</h2>
+                <p>📌 Current Price: <span id="price">--</span></p>
+                <p>⚡ EMA Fast: <span id="ema_fast">--</span></p>
+                <p>⏳ EMA Slow: <span id="ema_slow">--</span></p>
+                <p>📈 ADX: <span id="adx">--</span></p>
+                <!-- Position Data (Right) -->
+                <div class="position-section">
+                    <h2>📍 Position</h2>
+                    <p>🔄 Current Position: <span id="position">None</span></p>
+                    <p>🛑 Stop-Loss: <span id="stop_loss">None</span></p>
+                    <p>🎯 Take-Profit: <span id="take_profit">None</span></p>
+                </div>
+            </div>
+            <!-- Log Area -->
+            <div class="log-section">
+                <h2>📜 Trade Logs</h2>
+                <div id="log_area"></div>
+            </div>
+
+            
+        </div>
+            
+        
+    </div>
+</body>
+</html>
